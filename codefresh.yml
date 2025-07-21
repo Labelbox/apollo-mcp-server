@@ -1,4 +1,4 @@
-version: 1
+version: '1.0'
 
 mode: parallel
 stages:
@@ -115,6 +115,8 @@ steps:
     registry: '${{CONTAINER_REGISTRY_MAIN}}'
     image_name: 'container/apollo-mcp-server'
     tag: '${{CF_SHORT_REVISION}}'
+    tags:
+      - latest
     when:
       branch:
         only: [ main ]
