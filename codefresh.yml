@@ -73,23 +73,6 @@ steps:
         - name: cargo_clippy
           on: [ success ]
 
-  cargo_build_release:
-    stage: container
-    title: Build release binaries
-    image: rust:1.75
-    working_directory: clone_repo/apollo-mcp-server
-    commands:
-      - cargo build --release --package apollo-mcp-server
-      - ls -la target/release/
-    when:
-      steps:
-        - name: cargo_check
-          on: [ success ]
-        - name: cargo_clippy
-          on: [ success ]
-        - name: cargo_test
-          on: [ success ]
-
   build_container:
     stage: container
     title: Build container image
