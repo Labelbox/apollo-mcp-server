@@ -114,12 +114,12 @@ steps:
     candidate: ${{build_container}}
     registry: '${{CONTAINER_REGISTRY_MAIN}}'
     image_name: 'container/apollo-mcp-server'
-    tag: '${{CF_SHORT_REVISION}}'
+    tag: 'latest'
     tags:
       - latest
     when:
       branch:
-        only: [ main ]
+        only: [ main, test ]
       steps:
         - name: build_container
           on: [ success ]
