@@ -49,7 +49,7 @@ RUN chown app:app /app/apollo-mcp-server
 USER app
 
 # Expose port (adjust if your app uses a different port)
-EXPOSE 8080
+EXPOSE 5000
 
 # Set the entrypoint
 ENTRYPOINT ["/app/apollo-mcp-server"]
