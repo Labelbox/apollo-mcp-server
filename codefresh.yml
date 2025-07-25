@@ -1,0 +1,108 @@
+version: '1.0'
+
+mode: parallel
+stages:
+  - prepare
+  - code
+  - container
+
+steps:
+
+  clone_repo:
+    stage: prepare
+    title: Clone repository
+    type: git-clone
+    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+    revision: '${{CF_REVISION}}'
+    working_directory: clone_repo
+    git: 'github-integration'
+
+  setup_rust:
+    stage: prepare
+    title: Setup Rust toolchain
+    image: rust:1.75
+    working_directory: clone_repo/apollo-mcp-server
+    commands:
+      - rustc --version
+      - cargo --version
+      - rustup component add rust-analyzer rust-src
+      - pwd
+      - ls -la
+      - find . -name "Cargo.toml" -type f
+    when:
+      steps:
+        - name: clone_repo
+          on: [ success ]
+
+  cargo_check:
+    stage: code
+    description: Compile code to check for errors
+    title: Cargo check
+    image: rust:1.75
+    working_directory: clone_repo/apollo-mcp-server
+    commands:
+      - cargo check --all
+    when:
+      steps:
+        - name: setup_rust
+          on: [ success ]
+
+  cargo_clippy:
+    stage: code
+    description: Check the code for style issues and linting errors
+    title: Cargo clippy
+    image: rust:1.75
+    working_directory: clone_repo/apollo-mcp-server
+    commands:
+      - cargo clippy --all -- -D warnings
+    when:
+      steps:
+        - name: cargo_check
+          on: [ success ]
+
+  cargo_test:
+    stage: code
+    description: Run all tests and check for errors
+    title: Cargo test
+    image: rust:1.75
+    working_directory: clone_repo/apollo-mcp-server
+    commands:
+      - cargo test --all
+    when:
+      steps:
+        - name: cargo_clippy
+          on: [ success ]
+
+  build_container:
+    stage: container
+    title: Build container image
+    type: build
+    working_directory: clone_repo/apollo-mcp-server
+    dockerfile: Dockerfile 
+    image_name: apollo-mcp-server
+    tag: '${{CF_SHORT_REVISION}}'
+    build_arguments:
+      - CF_REVISION=${{CF_REVISION}}
+      - CF_BRANCH=${{CF_BRANCH}}
+    disable_push: true
+    when:
+      steps:
+        - name: cargo_build_release
+          on: [ success ]
+
+  push_main:
+    stage: container
+    title: Push to main registry
+    type: push
+    candidate: ${{build_container}}
+    registry: '${{CONTAINER_REGISTRY_MAIN}}'
+    image_name: 'container/apollo-mcp-server'
+    tag: '${{CF_SHORT_REVISION}}'
+    tags:
+      - latest
+    when:
+      branch:
+        only: [ main ]
+      steps:
+        - name: build_container
+          on: [ success ]
